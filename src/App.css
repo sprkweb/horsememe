@@ -1,0 +1,39 @@
+.app {
+    display: grid;
+    grid-template-rows: min-content min-content 1fr min-content;
+    justify-items: center;
+    min-height: 0;
+    box-sizing: border-box;
+    text-align: center;
+    padding: 1em 0;
+    gap: 1em;
+}
+
+.horseImage canvas {
+    display: block;
+}
+
+.partsAmount input {
+    width: 3em;
+}
+
+.ratings {
+    width: var(--canvas-width);
+    display: flex;
+    justify-content: space-around;
+}
+
+.ratingsPart {
+    padding: 0 1em;
+    flex-grow: 1;
+}
+
+.ratingsPart label, .ratingsPart input {
+    text-align: center;
+    margin: 0.25em;
+}
+
+.ratingsPart input {
+    text-align: center;
+    width: 3em;
+}
