@@ -1,68 +1,47 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  MIN_PARTS,
+  MAX_PARTS,
+  MIN_RATING,
+  MAX_RATING,
+  DEFAULT_RATING,
+} from './constants'
+import { drawCanvas } from './canvas/drawCanvas'
+import { usePreloadImages } from './hooks/usePreloadImages'
+import { clamp } from './utils/clamp'
 import './App.css'
 
-const CANVAS_WIDTH = 1344
-const CANVAS_HEIGHT = 768
-
-const MIN_PARTS = 1
-const MAX_PARTS = 11
-
-const MIN_RATING = 1
-const MAX_RATING = 10
-const DEFAULT_RATING = 10
+const INITIAL_PART_COUNT = 3
+const INITIAL_IMAGE_NUMS = [10, 6, 2]
+const INITIAL_TEXTS = ['', '', '']
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const imagesRef = useRef<(HTMLImageElement | null)[]>([])
-  const [partCount, setPartCount] = useState(2)
-  const [imageNums, setImageNums] = useState<number[]>([1, 2])
-  const [, setImagesVersion] = useState(0)
+  const { imagesRef, imagesVersion } = usePreloadImages()
 
-  // Preload all images 0..10
-  useEffect(() => {
-    const imgs = imagesRef.current
-    for (let i = 0; i <= 10; i++) {
-      const img = new Image()
-      img.onload = () => setImagesVersion((v) => v + 1)
-      img.src = `pics/${i}.png`
-      imgs[i] = img
-    }
-    return () => {
-      imgs.length = 0
-    }
-  }, [])
+  const [partCount, setPartCount] = useState(INITIAL_PART_COUNT)
+  const [imageNums, setImageNums] = useState<number[]>(INITIAL_IMAGE_NUMS)
+  const [texts, setTexts] = useState<string[]>(INITIAL_TEXTS)
+  const [topText, setTopText] = useState('')
+  const [showDividers, setShowDividers] = useState(false)
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
-    const ctx = canvas?.getContext('2d')
-    if (!canvas || !ctx) return
-
-    const count = imageNums.length
-    const sliceWidth = CANVAS_WIDTH / count
-
-    ctx.fillStyle = 'white'
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-
-    const imgs = imagesRef.current
-    for (let i = 0; i < count; i++) {
-      const img = imgs[imageNums[i]]
-      if (!img?.complete) continue
-
-      const x = sliceWidth * i
-      ctx.save()
-      ctx.beginPath()
-      ctx.rect(x, 0, sliceWidth, CANVAS_HEIGHT)
-      ctx.clip()
-      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-      ctx.restore()
-    }
-  }, [imageNums])
+    if (!canvas) return
+    drawCanvas(canvas, {
+      imageNums,
+      texts,
+      topText,
+      showDividers,
+      getImages: () => imagesRef.current,
+    })
+  }, [imageNums, texts, topText, showDividers, imagesRef])
 
   useEffect(() => {
     draw()
-  }, [draw])
+  }, [draw, imagesVersion])
 
-  const exportToPng = () => {
+  const exportToPng = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     canvas.toBlob((blob) => {
@@ -74,66 +53,111 @@ function App() {
       a.click()
       URL.revokeObjectURL(url)
     }, 'image/png')
-  }
+  }, [])
 
-  const handlePartCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const count = parseInt(e.target.value) || MIN_PARTS
-    const clampedCount = Math.max(MIN_PARTS, Math.min(count, MAX_PARTS))
-    setPartCount(clampedCount)
-    const newImageNums = [...imageNums]
-    while (newImageNums.length < clampedCount) newImageNums.push(DEFAULT_RATING)
-    while (newImageNums.length > clampedCount) newImageNums.pop()
-    setImageNums(newImageNums)
-  }
+  const handlePartCountChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const count = clamp(parseInt(e.target.value) || MIN_PARTS, MIN_PARTS, MAX_PARTS)
+      setPartCount(count)
+      setImageNums((prev) => {
+        const next = [...prev]
+        while (next.length < count) next.push(DEFAULT_RATING)
+        while (next.length > count) next.pop()
+        return next
+      })
+      setTexts((prev) => {
+        const next = [...prev]
+        while (next.length < count) next.push('')
+        while (next.length > count) next.pop()
+        return next
+      })
+    },
+    []
+  )
 
-  const handleImageNumChange = (index: number, value: string) => {
-    const num = Math.max(MIN_RATING, Math.min(parseInt(value) || DEFAULT_RATING, MAX_RATING))
-    const newImageNums = [...imageNums]
-    newImageNums[index] = num
-    setImageNums(newImageNums)
-  }
+  const handleImageNumChange = useCallback((index: number, value: string) => {
+    const num = clamp(
+      parseInt(value) || DEFAULT_RATING,
+      MIN_RATING,
+      MAX_RATING
+    )
+    setImageNums((prev) => {
+      const next = [...prev]
+      next[index] = num
+      return next
+    })
+  }, [])
+
+  const handleTextChange = useCallback((index: number, value: string) => {
+    setTexts((prev) => {
+      const next = [...prev]
+      next[index] = value
+      return next
+    })
+  }, [])
 
   return (
     <div className="app">
-      <div className="partsAmount">
-        <label>
-          Parts amount:{' '}
+      <div className="header">
+        <label style={{ marginLeft: '1em' }}>
+          Number of seasons:{' '}
           <input
             type="number"
-            min="1"
-            max="11"
+            min={MIN_PARTS}
+            max={MAX_PARTS}
             value={partCount}
             onChange={handlePartCountChange}
+            className="partsAmount"
           />
         </label>
+        <input
+          type="text"
+          value={topText}
+          onChange={(e) => setTopText(e.target.value)}
+          placeholder="Title of the series"
+        />
       </div>
 
       <div className="ratings">
         {imageNums.map((num, index) => (
           <div className="ratingsPart" key={index}>
-            <label>Part {index + 1}:</label>
+            <label>Season {index + 1}:</label>
             <input
               type="number"
-              min="0"
-              max="10"
+              min={MIN_RATING}
+              max={MAX_RATING}
               value={num}
               onChange={(e) => handleImageNumChange(index, e.target.value)}
+            />
+            <input
+              type="text"
+              value={texts[index] || ''}
+              onChange={(e) => handleTextChange(index, e.target.value)}
+              placeholder="Season title"
+              style={{ width: '100%', padding: '0.25em' }}
             />
           </div>
         ))}
       </div>
 
       <div className="horseImage">
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-        />
+        <canvas ref={canvasRef} />
       </div>
 
-      <button type="button" onClick={exportToPng}>
-        Download PNG
-      </button>
+      <div className="footer">
+        <label className="checkboxLabel">
+            <input
+              type="checkbox"
+              checked={showDividers}
+              onChange={(e) => setShowDividers(e.target.checked)}
+            />
+            Dividers
+        </label>
+
+        <button type="button" onClick={exportToPng}>
+          Download PNG
+        </button>
+      </div>
     </div>
   )
 }

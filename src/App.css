@@ -9,11 +9,22 @@
     gap: 1em;
 }
 
+.header {
+    display: flex;
+    gap: 1em; 
+}
+
+.footer {
+    width: var(--canvas-width);
+    display: flex;
+    justify-content: space-between;   
+}
+
 .horseImage canvas {
     display: block;
 }
 
-.partsAmount input {
+.partsAmount {
     width: 3em;
 }
 
@@ -24,7 +35,7 @@
 }
 
 .ratingsPart {
-    padding: 0 1em;
+    padding: 0 0.25em;
     flex-grow: 1;
 }
 
@@ -36,4 +47,10 @@
 .ratingsPart input {
     text-align: center;
     width: 3em;
+}
+
+.checkboxLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
 }
