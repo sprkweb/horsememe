@@ -9,15 +9,11 @@
     gap: 1em;
 }
 
-.header {
-    display: flex;
-    gap: 1em; 
-}
-
-.footer {
+.header, .footer {
     width: var(--canvas-width);
     display: flex;
-    justify-content: space-between;   
+    gap: 1em; 
+    justify-content: space-between; 
 }
 
 .horseImage canvas {
