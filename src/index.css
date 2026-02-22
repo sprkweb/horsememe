@@ -37,11 +37,6 @@ footer {
     justify-content: center;
     gap: 2rem;
   
-    a {
-      text-decoration: none !important;
-      color: black;
-    }
-  
     .gh-link svg {
       height: 1.3em;
       vertical-align: text-bottom;
