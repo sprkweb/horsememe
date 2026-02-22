@@ -26,3 +26,24 @@ input, button {
 input[type="checkbox"] {
     width: 1.75em;
 }
+
+footer {
+    text-align: center;
+    flex: 0 0 auto;
+    padding: 1rem;
+    
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+  
+    a {
+      text-decoration: none !important;
+      color: black;
+    }
+  
+    .gh-link svg {
+      height: 1.3em;
+      vertical-align: text-bottom;
+    }
+  }
